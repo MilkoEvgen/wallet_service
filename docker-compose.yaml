@@ -1,0 +1,26 @@
+version: "3.9"
+services:
+  postgres0:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: "ds_0"
+      POSTGRES_USER: "root"
+      POSTGRES_PASSWORD: "password"
+    ports:
+      - "5455:5432"
+    networks:
+      - sharding-network
+
+  postgres1:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: "ds_1"
+      POSTGRES_USER: "root"
+      POSTGRES_PASSWORD: "password"
+    ports:
+      - "5456:5432"
+    networks:
+      - sharding-network
+
+networks:
+  sharding-network:

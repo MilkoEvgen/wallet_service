@@ -1,0 +1,13 @@
+datasource:
+  ds0:
+    url: jdbc:postgresql://localhost:5455/ds_0
+    user: root
+    password: password
+    driver: org.postgresql.Driver
+  ds1:
+    url: jdbc:postgresql://localhost:5456/ds_1
+    user: root
+    password: password
+    driver: org.postgresql.Driver
+
+
