@@ -13,8 +13,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TopUpRequest {
-    private UUID uid;
+    private UUID uuid;
     private LocalDateTime createdAt;
-    private String provider;
     private UUID paymentRequestUid;
 }

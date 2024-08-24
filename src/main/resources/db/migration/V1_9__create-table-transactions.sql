@@ -7,15 +7,16 @@ create table transactions
     profile_uid              uuid                           not null,
     wallet_uid               uuid                           not null
         references wallets (uuid),
-    wallet_name              varchar(32)                    not null,
+    wallet_name              varchar(32),
     balance_operation_amount numeric          default 0.0   not null,
     raw_amount               numeric          default 0.0   not null,
     fee                      numeric          default 0.0   not null,
     amount_in_usd            numeric          default 0.0   not null,
     type                     varchar(32)                    not null,
-    state                    varchar(32)                    not null,
+    state                    varchar(32),
     payment_request_uid      uuid                           not null
         references payment_requests (uuid) on delete cascade,
     currency_code            varchar(3)                     not null,
-    refund_fee               bigint           default 0     not null
+    refund_fee               bigint           default 0     not null,
+    status                   varchar(32)                    not null
 );

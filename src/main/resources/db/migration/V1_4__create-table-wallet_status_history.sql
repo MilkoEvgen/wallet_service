@@ -1,6 +1,6 @@
 create table wallet_status_history
 (
-    id                      bigserial primary key,
+    uuid                      uuid,
     created_at              timestamp default now() not null,
     wallet_uid              uuid                    not null
         references wallets (uuid) on delete cascade,
@@ -13,4 +13,4 @@ create table wallet_status_history
 );
 
 create index wallets_status_history_id
-    on wallet_status_history (id);
+    on wallet_status_history (uuid);

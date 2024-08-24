@@ -23,5 +23,4 @@ public class WalletTypeStatusHistory {
     private Status fromStatus;
     private String comment;
     private Status toStatus;
-
 }

@@ -26,6 +26,7 @@ create table individual_fee_rules
 );
 
 INSERT INTO individual_fee_rules (transaction_type, percentage, status)
-VALUES ('top_up', 0.3, 'ACTIVE'),
-       ('withdraw', 0.1, 'ACTIVE'),
-       ('transfer', 0.2, 'ACTIVE');
+VALUES ('TOP_UP', 0.3, 'ACTIVE'),
+       ('WITHDRAWAL', 0.1, 'ACTIVE'),
+       ('TRANSFER', 0.2, 'ACTIVE');
+

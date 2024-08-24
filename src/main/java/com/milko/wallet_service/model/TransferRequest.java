@@ -13,9 +13,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TransferRequest {
-    private UUID uid;
+    private UUID uuid;
     private LocalDateTime createdAt;
-    private String systemRate;
-    private UUID paymentRequestUidFrom;
-    private UUID paymentRequestUidTo;
+    private UUID paymentRequestUid;
+    private UUID recipientUid;
+    private UUID walletUidTo;
 }

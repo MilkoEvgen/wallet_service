@@ -13,9 +13,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class WithdrawalRequest {
-    private UUID uid;
+    private UUID uuid;
     private LocalDateTime createdAt;
-    private String provider;
-    private String token;
     private UUID paymentRequestUid;
 }

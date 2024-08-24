@@ -1,5 +1,6 @@
 package com.milko.wallet_service.model;
 
+import com.milko.wallet_service.dto.RequestType;
 import com.milko.wallet_service.dto.Status;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,7 +19,7 @@ public class IndividualFeeRule {
     private Long id;
     private LocalDateTime createdAt;
     private LocalDateTime modifiedAt;
-    private String transactionType;
+    private RequestType transactionType;
     private BigDecimal percentage;
     private BigDecimal fixedAmount;
     private String option;

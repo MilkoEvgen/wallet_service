@@ -14,7 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Transaction {
-    private UUID uid;
+    private UUID uuid;
     private LocalDateTime createdAt;
     private LocalDateTime modifiedAt;
     private UUID linkedTransaction;
@@ -30,4 +30,5 @@ public class Transaction {
     private UUID paymentRequestUid;
     private String currencyCode;
     private Long refundFee;
+    private TransactionStatus status;
 }

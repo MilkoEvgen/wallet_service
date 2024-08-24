@@ -1,7 +1,8 @@
 package com.milko.wallet_service.rest;
 
-import com.milko.wallet_service.dto.WalletTypeInputDto;
-import com.milko.wallet_service.dto.WalletTypeOutputDto;
+import com.milko.wallet_service.dto.input.ChangeWalletTypeInputDto;
+import com.milko.wallet_service.dto.input.WalletTypeInputDto;
+import com.milko.wallet_service.dto.output.WalletTypeOutputDto;
 import com.milko.wallet_service.service.WalletTypeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -30,8 +31,8 @@ public class WalletTypeController {
     }
 
     @PatchMapping
-    public WalletTypeOutputDto update(@RequestBody WalletTypeInputDto walletTypeInputDto){
-        return walletTypeService.update(walletTypeInputDto);
+    public WalletTypeOutputDto update(@RequestBody ChangeWalletTypeInputDto changeWalletTypeInputDto){
+        return walletTypeService.update(changeWalletTypeInputDto);
     }
 
     @DeleteMapping("/{id}")
