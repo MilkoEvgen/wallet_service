@@ -41,7 +41,7 @@ public class WalletTypeStatusHistoryRepositoryImpl implements WalletTypeStatusHi
     }
 
     @Override
-    public List<WalletTypeStatusHistory> findAllByWalletTypeId(Integer walletTypeId, DataSource dataSource) {
+    public List<WalletTypeStatusHistory> findAllByWalletTypeId(UUID walletTypeId, DataSource dataSource) {
         String SQL = "SELECT * FROM wallet_types_status_history WHERE wallet_type_id = ?";
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
         return jdbcTemplate.query(SQL, new WalletTypeStatusHistoryRowMapper(), walletTypeId);
@@ -56,7 +56,7 @@ public class WalletTypeStatusHistoryRepositoryImpl implements WalletTypeStatusHi
 
     private Map<String, Object> getParametersFromWalletTypeStatusHistory(WalletTypeStatusHistory walletTypeStatusHistory){
         Map<String, Object> parameters = new HashMap<>();
-        parameters.put("id", walletTypeStatusHistory.getId());
+        parameters.put("uuid", walletTypeStatusHistory.getUuid());
         parameters.put("created_at", LocalDateTime.now());
         parameters.put("wallet_type_id", walletTypeStatusHistory.getWalletTypeId());
         parameters.put("changed_by_user_uid", walletTypeStatusHistory.getChangedByUserUid());
@@ -72,9 +72,9 @@ public class WalletTypeStatusHistoryRepositoryImpl implements WalletTypeStatusHi
         @Override
         public WalletTypeStatusHistory mapRow(ResultSet rs, int rowNum) throws SQLException {
             return WalletTypeStatusHistory.builder()
-                    .id(rs.getLong("id"))
+                    .uuid(UUID.fromString(rs.getString("uuid")))
                     .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
-                    .walletTypeId(rs.getInt("wallet_type_id"))
+                    .walletTypeId(UUID.fromString(rs.getString("wallet_type_id")))
                     .changedByUserUid(UUID.fromString(rs.getString("changed_by_user_uid")))
                     .changedByProfileType(rs.getString("changed_by_profile_type"))
                     .reason(rs.getString("reason"))

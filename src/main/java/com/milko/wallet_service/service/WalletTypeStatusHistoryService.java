@@ -6,12 +6,11 @@ import com.milko.wallet_service.model.WalletTypeStatusHistory;
 
 import javax.sql.DataSource;
 import java.util.List;
+import java.util.UUID;
 
 public interface WalletTypeStatusHistoryService {
 
-    void create(ChangeWalletTypeInputDto changeWalletTypeInputDto, Long generatedId, Status fromStatus, DataSource dataSource);
-    void rollbackCreate(Long id, DataSource dataSource);
-    List<WalletTypeStatusHistory> findAllByWalletTypeId(Integer walletTypeId);
-    Long getMaxId(DataSource dataSource);
+    void create(ChangeWalletTypeInputDto changeWalletTypeInputDto, UUID generatedId, Status fromStatus, DataSource dataSource);
+    List<WalletTypeStatusHistory> findAllByWalletTypeId(UUID walletTypeId);
 
 }

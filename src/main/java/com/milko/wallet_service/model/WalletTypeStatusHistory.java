@@ -14,9 +14,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class WalletTypeStatusHistory {
-    private Long id;
+    private UUID uuid;
     private LocalDateTime createdAt;
-    private Integer walletTypeId;
+    private UUID walletTypeId;
     private UUID changedByUserUid;
     private String changedByProfileType;
     private String reason;

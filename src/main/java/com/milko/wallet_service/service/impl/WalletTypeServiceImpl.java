@@ -11,11 +11,15 @@ import com.milko.wallet_service.repository.WalletTypeRepository;
 import com.milko.wallet_service.service.WalletTypeService;
 import com.milko.wallet_service.service.WalletTypeStatusHistoryService;
 import com.milko.wallet_service.sharding.ShardService;
+import com.milko.wallet_service.transaction.TransactionContext;
+import com.milko.wallet_service.transaction.TransactionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
 import java.util.*;
 
 @Service
@@ -26,41 +30,29 @@ public class WalletTypeServiceImpl implements WalletTypeService {
     private final WalletTypeStatusHistoryService walletTypeStatusHistoryService;
     private final WalletTypeMapper walletTypeMapper;
     private final ShardService shardService;
+    private final TransactionManager transactionManager;
 
 
     @Override
-    public Integer create(WalletTypeInputDto walletTypeInputDto) {
+    public UUID create(WalletTypeInputDto walletTypeInputDto) {
         log.info("IN WalletTypeServiceImpl create(), walletTypeInputDto = {}", walletTypeInputDto);
-        Integer maxId = walletTypeRepository.getMaxId(shardService.getRandomDataSource());
-        Integer generatedId = (maxId != null) ? maxId + 1 : 1;
-        walletTypeInputDto.setId(generatedId);
-
+        UUID generatedId = UUID.randomUUID();
+        walletTypeInputDto.setUuid(generatedId);
         WalletType walletType = walletTypeMapper.toWalletType(walletTypeInputDto);
-
         List<DataSource> dataSources = shardService.getAllDataSources();
-        List<DataSource> processedDataSources = new ArrayList<>();
-        try {
-            for (DataSource dataSource : dataSources) {
-                walletTypeRepository.create(walletType, dataSource);
-                processedDataSources.add(dataSource);
-            }
-        } catch (Exception e){
-            rollbackCreateForProcessedElements(generatedId, processedDataSources);
-            throw new ShardServiceException(e.getMessage());
-        }
-        return generatedId;
-    }
 
-    private void rollbackCreateForProcessedElements(Integer id, List<DataSource> processedElements){
-        for (DataSource dataSource : processedElements) {
-            walletTypeRepository.rollbackCreate(id, dataSource);
-        }
+        return transactionManager.executeInTransaction(dataSources, context -> {
+            for (DataSource dataSource : dataSources) {
+                 walletTypeRepository.create(walletType, getTransactionalDataSource(dataSource));
+            }
+            return generatedId;
+        });
     }
 
     @Override
-    public WalletTypeOutputDto findById(Integer id) {
-        log.info("IN WalletTypeServiceImpl findById(), id = {}", id);
-        return walletTypeMapper.toWalletTypeOutputDto(walletTypeRepository.findById(id, shardService.getRandomDataSource()));
+    public WalletTypeOutputDto findById(UUID uuid) {
+        log.info("IN WalletTypeServiceImpl findById(), uuid = {}", uuid);
+        return walletTypeMapper.toWalletTypeOutputDto(walletTypeRepository.findById(uuid, shardService.getRandomDataSource()));
     }
 
     @Override
@@ -72,65 +64,39 @@ public class WalletTypeServiceImpl implements WalletTypeService {
     }
 
     @Override
-    public WalletTypeOutputDto update(ChangeWalletTypeInputDto changeWalletTypeInputDto) {
-        log.info("IN WalletTypeServiceImpl update(), changeWalletTypeInputDto = {}", changeWalletTypeInputDto);
-        Integer walletTypeId = changeWalletTypeInputDto.getWalletTypeId();
-
-        WalletType oldWalletType = walletTypeRepository.findById(changeWalletTypeInputDto.getWalletTypeId(), shardService.getRandomDataSource());
-        Status oldStatus = oldWalletType.getStatus();
-        Status newStatus = changeWalletTypeInputDto.getToStatus();
+    public WalletTypeOutputDto update(ChangeWalletTypeInputDto dto) {
+        log.info("IN WalletTypeServiceImpl update(), dto = {}", dto);
         List<DataSource> dataSources = shardService.getAllDataSources();
-        List<DataSource> processedDataSources = new ArrayList<>();
+        WalletType walletType = walletTypeRepository.findById(dto.getWalletTypeId(), shardService.getRandomDataSource());
 
-        Long maxId = walletTypeStatusHistoryService.getMaxId(shardService.getRandomDataSource());
-        Long generatedId = (maxId != null) ? maxId + 1 : 1;
-        try {
+        UUID generatedId = UUID.randomUUID();
+
+        return transactionManager.executeInTransaction(dataSources, context -> {
             for (DataSource dataSource : dataSources) {
-                walletTypeRepository.updateStatus(newStatus, walletTypeId, changeWalletTypeInputDto.getChangedByUserUid(), dataSource);
-                walletTypeStatusHistoryService.create(changeWalletTypeInputDto, generatedId, oldStatus, dataSource);
-                processedDataSources.add(dataSource);
+                walletTypeRepository.updateStatus(dto.getToStatus(), dto.getWalletTypeId(), dto.getChangedByUserUid(), getTransactionalDataSource(dataSource));
+                walletTypeStatusHistoryService.create(dto, generatedId, walletType.getStatus(), getTransactionalDataSource(dataSource));
             }
-        } catch (Exception e){
-            rollbackUpdateForProcessedElements(oldWalletType, generatedId, processedDataSources);
-            throw new ShardServiceException(e.getMessage());
-        }
-        return walletTypeMapper.toWalletTypeOutputDto(walletTypeRepository.findById(walletTypeId, shardService.getRandomDataSource()));
-    }
-
-    private void rollbackUpdateForProcessedElements(WalletType oldWalletType, Long walletTypeStatusHistoryId, List<DataSource> processedDataSources){
-        for (DataSource dataSource : processedDataSources) {
-            walletTypeRepository.rollbackUpdate(oldWalletType.getStatus(), oldWalletType.getId(), oldWalletType.getModifiedAt(), oldWalletType.getModifier(), dataSource);
-            walletTypeStatusHistoryService.rollbackCreate(walletTypeStatusHistoryId, dataSource);
-        }
+            return walletTypeMapper.toWalletTypeOutputDto(walletTypeRepository.findById(dto.getWalletTypeId(), shardService.getRandomDataSource()));
+        });
     }
 
 
     @Override
-    public Boolean deleteById(Integer id) {
-        log.info("IN WalletTypeServiceImpl deleteById(), id = {}", id);
+    public Boolean deleteById(UUID uuid) {
+        log.info("IN WalletTypeServiceImpl deleteById(), id = {}", uuid);
         List<DataSource> dataSources = shardService.getAllDataSources();
-        List<DataSource> processedDataSources = new ArrayList<>();
-        try {
+
+        return transactionManager.executeInTransaction(dataSources, context -> {
             for (DataSource dataSource : dataSources) {
-                walletTypeRepository.deleteById(id, dataSource);
-                processedDataSources.add(dataSource);
+                walletTypeRepository.deleteById(uuid, getTransactionalDataSource(dataSource));
             }
-        } catch (Exception e){
-            rollbackDeleteForProcessedElements(id, processedDataSources);
-            throw new ShardServiceException(e.getMessage());
-        }
-        return true;
+            return true;
+        });
     }
 
-    @Override
-    public String getCurrentStatusByWalletId(Integer id) {
-        DataSource dataSource = shardService.getRandomDataSource();
-        return walletTypeRepository.getCurrentStatusByWalletId(id, dataSource);
-    }
-
-    private void rollbackDeleteForProcessedElements(Integer id, List<DataSource> processedDataSources){
-        for (DataSource dataSource : processedDataSources) {
-            walletTypeRepository.rollbackDeleteById(id, dataSource);
-        }
+    private DataSource getTransactionalDataSource(DataSource dataSource){
+        TransactionContext context = TransactionContext.get();
+        Connection connection = context.getConnection(dataSource);
+        return new SingleConnectionDataSource(connection, false);
     }
 }

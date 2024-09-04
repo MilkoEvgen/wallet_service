@@ -131,7 +131,7 @@ public class WalletRepositoryImpl implements WalletRepository {
                     .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
                     .modifiedAt(rs.getTimestamp("modified_at") != null ? rs.getTimestamp("modified_at").toLocalDateTime() : null)
                     .name(rs.getString("name"))
-                    .walletTypeId(rs.getInt("wallet_type_id"))
+                    .walletTypeId(UUID.fromString(rs.getString("wallet_type_id")))
                     .profileUid(UUID.fromString(rs.getString("profile_uid")))
                     .status(Status.valueOf(rs.getString("status")))
                     .balance(rs.getBigDecimal("balance"))

@@ -19,7 +19,7 @@ public class Wallet {
     private LocalDateTime createdAt;
     private LocalDateTime modifiedAt;
     private String name;
-    private Integer walletTypeId;
+    private UUID walletTypeId;
     private UUID profileUid;
     private Status status;
     private BigDecimal balance;

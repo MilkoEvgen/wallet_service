@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import javax.sql.DataSource;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -22,26 +23,17 @@ public class WalletTypeStatusHistoryServiceImpl implements WalletTypeStatusHisto
     private final ShardService shardService;
 
     @Override
-    public void create(ChangeWalletTypeInputDto changeWalletTypeInputDto, Long generatedId, Status fromStatus, DataSource dataSource) {
+    public void create(ChangeWalletTypeInputDto changeWalletTypeInputDto, UUID generatedId, Status fromStatus, DataSource dataSource) {
         WalletTypeStatusHistory walletTypeStatusHistory = createWalletTypeStatusHistory(changeWalletTypeInputDto);
-        walletTypeStatusHistory.setId(generatedId);
+        walletTypeStatusHistory.setUuid(generatedId);
         walletTypeStatusHistory.setFromStatus(fromStatus);
         walletTypeStatusHistoryRepository.create(walletTypeStatusHistory, dataSource);
     }
 
-    public void rollbackCreate(Long id, DataSource dataSource) {
-        walletTypeStatusHistoryRepository.rollbackCreate(id, dataSource);
-    }
-
     @Override
-    public List<WalletTypeStatusHistory> findAllByWalletTypeId(Integer walletTypeStatusHistoryId) {
+    public List<WalletTypeStatusHistory> findAllByWalletTypeId(UUID walletTypeStatusHistoryId) {
         DataSource dataSource = shardService.getRandomDataSource();
         return walletTypeStatusHistoryRepository.findAllByWalletTypeId(walletTypeStatusHistoryId, dataSource);
-    }
-
-    @Override
-    public Long getMaxId(DataSource dataSource) {
-        return walletTypeStatusHistoryRepository.getMaxId(shardService.getRandomDataSource());
     }
 
     private WalletTypeStatusHistory createWalletTypeStatusHistory(ChangeWalletTypeInputDto changeWalletTypeInputDto) {

@@ -1,11 +1,12 @@
 package com.milko.wallet_service.service;
 
+import com.milko.wallet_service.dto.output.TransferRequestOutputDto;
 import com.milko.wallet_service.model.TransferRequest;
 
 import java.util.UUID;
 
 public interface TransferRequestService {
-    TransferRequest create(TransferRequest request, UUID profileUid);
-    TransferRequest findById(UUID uuid, UUID profileUid);
-    TransferRequest findByPaymentRequestId(UUID paymentRequestId, UUID profileUid);
+    TransferRequestOutputDto create(TransferRequest request, UUID profileUid);
+    TransferRequestOutputDto findById(UUID uuid, UUID profileUid);
+    TransferRequestOutputDto findByPaymentRequestId(UUID paymentRequestId, UUID profileUid);
 }

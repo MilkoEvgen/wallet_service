@@ -26,28 +26,18 @@ public class WalletTypeRepositoryImpl implements WalletTypeRepository {
     public Boolean create(WalletType walletType, DataSource dataSource) {
         log.info("IN WalletTypeRepository create, walletType = {}", walletType);
         Map<String, Object> parameters = getParametersFromWalletType(walletType);
-
         SimpleJdbcInsert simpleJdbcInsert = new SimpleJdbcInsert(dataSource)
                 .withTableName("wallet_types");
-
         int rowsAffected = simpleJdbcInsert.execute(parameters);
         return rowsAffected > 0;
     }
 
     @Override
-    public void rollbackCreate(Integer id, DataSource dataSource) {
-        log.info("IN WalletTypeRepository rollbackCreate, id = {}", id);
-        String sql = "DELETE FROM wallet_types WHERE id = ?";
+    public WalletType findById(UUID uuid, DataSource dataSource) {
+        log.info("IN WalletTypeRepository findById, uuid = {}", uuid);
+        String sql = "SELECT * FROM wallet_types WHERE uuid = ?";
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        jdbcTemplate.update(sql, id);
-    }
-
-    @Override
-    public WalletType findById(Integer id, DataSource dataSource) {
-        log.info("IN WalletTypeRepository findById, id = {}", id);
-        String sql = "SELECT * FROM wallet_types WHERE id = ?";
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        return jdbcTemplate.queryForObject(sql, new WalletTypeRowMapper(), id);
+        return jdbcTemplate.queryForObject(sql, new WalletTypeRowMapper(), uuid);
     }
 
     @Override
@@ -59,9 +49,9 @@ public class WalletTypeRepositoryImpl implements WalletTypeRepository {
     }
 
     @Override
-    public Boolean updateStatus(Status status, Integer id, UUID changedByUserId, DataSource dataSource) {
+    public Boolean updateStatus(Status status, UUID id, UUID changedByUserId, DataSource dataSource) {
         log.info("IN WalletTypeRepository update, status = {}, id = {}", status, id);
-        String sql = "UPDATE wallet_types SET status = ?, modified_at = ?, modifier = ? WHERE id = ?";
+        String sql = "UPDATE wallet_types SET status = ?, modified_at = ?, modifier = ? WHERE uuid = ?";
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
         int rowsAffected = jdbcTemplate.update(sql, status.name(), LocalDateTime.now(), changedByUserId.toString(), id);
 
@@ -69,47 +59,17 @@ public class WalletTypeRepositoryImpl implements WalletTypeRepository {
     }
 
     @Override
-    public void rollbackUpdate(Status status, Integer id, LocalDateTime dateTime, String changedByUserId, DataSource dataSource) {
-        log.info("IN WalletTypeRepository rollbackUpdate, status = {}, id = {}", status, id);
-        String sql = "UPDATE wallet_types SET status = ?, modified_at = ?, modifier = ? WHERE id = ?";
+    public Boolean deleteById(UUID uuid, DataSource dataSource) {
+        log.info("IN WalletTypeRepository deleteById, uuid = {}", uuid);
+        String sql = "UPDATE wallet_types SET status = 'DELETED', archived_at = ? WHERE uuid = ?";
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        jdbcTemplate.update(sql, status.name(), dateTime, changedByUserId, id);
-    }
-
-    @Override
-    public Boolean deleteById(Integer id, DataSource dataSource) {
-        log.info("IN WalletTypeRepository deleteById, id = {}", id);
-        String sql = "UPDATE wallet_types SET status = 'DELETED', archived_at = ? WHERE id = ?";
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        int rowsAffected = jdbcTemplate.update(sql, LocalDateTime.now(), id);
+        int rowsAffected = jdbcTemplate.update(sql, LocalDateTime.now(), uuid);
         return rowsAffected > 0;
-    }
-
-    @Override
-    public void rollbackDeleteById(Integer id, DataSource dataSource) {
-        log.info("IN WalletTypeRepository rollbackDeleteById, id = {}", id);
-        String sql = "UPDATE wallet_types SET status = 'ACTIVE', archived_at = ? WHERE id = ?";
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        jdbcTemplate.update(sql, null, id);
-    }
-
-    @Override
-    public Integer getMaxId(DataSource dataSource) {
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        String SQL = "SELECT max(id) FROM wallet_types";
-        return jdbcTemplate.queryForObject(SQL, Integer.class);
-    }
-
-    @Override
-    public String getCurrentStatusByWalletId(Integer id, DataSource dataSource) {
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        String SQL = "SELECT status FROM wallet_types WHERE id = ?";
-        return jdbcTemplate.queryForObject(SQL, String.class);
     }
 
     private Map<String, Object> getParametersFromWalletType(WalletType walletType){
         Map<String, Object> parameters = new HashMap<>();
-        parameters.put("id", walletType.getId());
+        parameters.put("uuid", walletType.getUuid());
         parameters.put("name", walletType.getName());
         parameters.put("created_at", LocalDateTime.now());
         parameters.put("currency_code", walletType.getCurrencyCode());
@@ -123,7 +83,7 @@ public class WalletTypeRepositoryImpl implements WalletTypeRepository {
         @Override
         public WalletType mapRow(ResultSet rs, int rowNum) throws SQLException {
             return WalletType.builder()
-                    .id(rs.getInt("id"))
+                    .uuid(UUID.fromString(rs.getString("uuid")))
                     .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
                     .modifiedAt(rs.getTimestamp("modified_at") != null ? rs.getTimestamp("modified_at").toLocalDateTime() : null)
                     .name(rs.getString("name"))

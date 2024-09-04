@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -16,13 +17,13 @@ public class WalletTypeController {
     private final WalletTypeService walletTypeService;
 
     @PostMapping
-    public Integer create(@RequestBody WalletTypeInputDto walletTypeInputDto){
+    public UUID create(@RequestBody WalletTypeInputDto walletTypeInputDto){
         return walletTypeService.create(walletTypeInputDto);
     }
 
-    @GetMapping("/{id}")
-    public WalletTypeOutputDto findById(@PathVariable Integer id){
-        return walletTypeService.findById(id);
+    @GetMapping("/{uuid}")
+    public WalletTypeOutputDto findById(@PathVariable UUID uuid){
+        return walletTypeService.findById(uuid);
     }
 
     @GetMapping
@@ -35,8 +36,8 @@ public class WalletTypeController {
         return walletTypeService.update(changeWalletTypeInputDto);
     }
 
-    @DeleteMapping("/{id}")
-    public Boolean delete(@PathVariable Integer id){
-        return walletTypeService.deleteById(id);
+    @DeleteMapping("/{uuid}")
+    public Boolean delete(@PathVariable UUID uuid){
+        return walletTypeService.deleteById(uuid);
     }
 }

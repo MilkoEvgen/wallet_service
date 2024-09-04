@@ -18,7 +18,7 @@ public class WalletInputDto {
     private UUID uuid;
     private String name;
     @JsonProperty("wallet_type_id")
-    private Integer walletTypeId;
+    private UUID walletTypeId;
     @JsonProperty("profile_uid")
     private UUID profileUid;
     private Status status;

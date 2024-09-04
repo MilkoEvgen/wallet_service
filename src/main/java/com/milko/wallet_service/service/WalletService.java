@@ -10,8 +10,8 @@ import java.util.UUID;
 
 public interface WalletService {
     WalletOutputDto create(WalletInputDto wallet);
-    WalletOutputDto topUp(UUID walletUid, BigDecimal amount, UUID profileId);
-    WalletOutputDto withdraw(UUID walletUid, BigDecimal amount, UUID profileId);
+    Boolean topUp(UUID walletUid, BigDecimal amount, UUID profileId);
+    Boolean withdraw(UUID walletUid, BigDecimal amount, UUID profileId);
     WalletOutputDto findById(UUID walletId, UUID profileId);
     List<WalletOutputDto> findAllByProfileId(UUID uuid);
     WalletOutputDto updateStatus(ChangeWalletInputDto changeWalletInputDto);

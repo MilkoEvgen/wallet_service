@@ -5,12 +5,12 @@ import com.milko.wallet_service.dto.input.WalletTypeInputDto;
 import com.milko.wallet_service.dto.output.WalletTypeOutputDto;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface WalletTypeService {
-    Integer create(WalletTypeInputDto walletTypeInputDto);
-    WalletTypeOutputDto findById(Integer id);
+    UUID create(WalletTypeInputDto walletTypeInputDto);
+    WalletTypeOutputDto findById(UUID uuid);
     List<WalletTypeOutputDto> findAll();
     WalletTypeOutputDto update(ChangeWalletTypeInputDto changeWalletTypeInputDto);
-    Boolean deleteById(Integer id);
-    String getCurrentStatusByWalletId(Integer id);
+    Boolean deleteById(UUID uuid);
 }

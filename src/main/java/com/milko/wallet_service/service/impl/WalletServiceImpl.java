@@ -12,14 +12,18 @@ import com.milko.wallet_service.service.WalletService;
 import com.milko.wallet_service.service.WalletStatusHistoryService;
 import com.milko.wallet_service.service.WalletTypeService;
 import com.milko.wallet_service.sharding.ShardService;
+import com.milko.wallet_service.transaction.TransactionContext;
+import com.milko.wallet_service.transaction.TransactionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.sql.DataSource;
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,11 +38,12 @@ public class WalletServiceImpl implements WalletService {
     private final WalletStatusHistoryService walletStatusHistoryService;
     private final WalletTypeService walletTypeService;
     private final WalletMapper walletMapper;
+    private final TransactionManager transactionManager;
 
     @Override
     public WalletOutputDto create(WalletInputDto walletInputDto) {
-        log.info("IN create, wallet = {}", walletMapper.toWallet(walletInputDto));
-        DataSource dataSource = shardService.getDataSourceByUuid(walletInputDto.getProfileUid());
+        log.info("IN create, wallet = {}", walletInputDto);
+        DataSource dataSource = getDataSource(walletInputDto.getProfileUid());
         walletInputDto.setUuid(UUID.randomUUID());
         Wallet wallet = walletRepository.create(walletMapper.toWallet(walletInputDto), dataSource);
         WalletTypeOutputDto walletTypeOutputDto = walletTypeService.findById(walletInputDto.getWalletTypeId());
@@ -46,32 +51,30 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
-    public WalletOutputDto topUp(UUID walletUid, BigDecimal amount, UUID profileId) {
-        DataSource dataSource = shardService.getDataSourceByUuid(profileId);
+    public Boolean topUp(UUID walletUid, BigDecimal amount, UUID profileId) {
+        DataSource dataSource = getDataSource(profileId);
         Optional<Wallet> optionalWallet = walletRepository.findById(walletUid, dataSource);
         Wallet wallet = optionalWallet.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         BigDecimal newBalance = wallet.getBalance().add(amount);
-        walletRepository.updateBalance(walletUid, newBalance, dataSource);
-        return null;
+        return walletRepository.updateBalance(walletUid, newBalance, dataSource);
     }
 
     @Override
-    public WalletOutputDto withdraw(UUID walletUid, BigDecimal amount, UUID profileId) {
-        DataSource dataSource = shardService.getDataSourceByUuid(profileId);
+    public Boolean withdraw(UUID walletUid, BigDecimal amount, UUID profileId) {
+        DataSource dataSource = getDataSource(profileId);
         Optional<Wallet> optionalWallet = walletRepository.findById(walletUid, dataSource);
         Wallet wallet = optionalWallet.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         BigDecimal newBalance = wallet.getBalance().subtract(amount);
         if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
             throw new LowBalanceException();
         }
-        walletRepository.updateBalance(walletUid, newBalance, dataSource);
-        return null;
+        return walletRepository.updateBalance(walletUid, newBalance, dataSource);
     }
 
     @Override
     public WalletOutputDto findById(UUID walletId, UUID profileId) {
         log.info("IN findById, walletId = {}, profileId = {}", walletId, profileId);
-        DataSource dataSource = shardService.getDataSourceByUuid(profileId);
+        DataSource dataSource = getDataSource(profileId);
         Optional<Wallet> optionalWallet = walletRepository.findById(walletId, dataSource);
         Wallet wallet = optionalWallet.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         WalletTypeOutputDto walletTypeOutputDto = walletTypeService.findById(wallet.getWalletTypeId());
@@ -81,7 +84,7 @@ public class WalletServiceImpl implements WalletService {
     @Override
     public List<WalletOutputDto> findAllByProfileId(UUID profileId) {
         log.info("IN findAllByProfileId, profileId = {}", profileId);
-        DataSource dataSource = shardService.getDataSourceByUuid(profileId);
+        DataSource dataSource = getDataSource(profileId);
         return walletRepository.findAllByUserId(profileId, dataSource).stream()
                 .map(wallet -> {
                     WalletTypeOutputDto walletTypeOutputDto = walletTypeService.findById(wallet.getWalletTypeId());
@@ -92,22 +95,39 @@ public class WalletServiceImpl implements WalletService {
     @Override
     public WalletOutputDto updateStatus(ChangeWalletInputDto changeWalletInputDto) {
         log.info("IN updateStatus, changeWalletInputDto = {}", changeWalletInputDto);
-        DataSource dataSource = shardService.getDataSourceByUuid(changeWalletInputDto.getChangedByUserUid());
-        Optional<Wallet> optionalWallet = walletRepository.findById(changeWalletInputDto.getWalletId(), dataSource);
-        Wallet wallet = optionalWallet.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        walletRepository.updateStatus(changeWalletInputDto.getWalletId(), changeWalletInputDto.getToStatus(), dataSource);
-        walletStatusHistoryService.create(changeWalletInputDto, wallet.getStatus(), changeWalletInputDto.getChangedByUserUid());
-        Optional<Wallet> updatedOptionalWallet = walletRepository.findById(changeWalletInputDto.getWalletId(), dataSource);
-        Wallet updatedWallet = updatedOptionalWallet.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        WalletTypeOutputDto walletTypeOutputDto = walletTypeService.findById(wallet.getWalletTypeId());
-        return walletMapper.toWalletOutputDtoWithWalletType(updatedWallet, walletTypeOutputDto);
+        DataSource dataSource = getDataSource(changeWalletInputDto.getChangedByUserUid());
+        return transactionManager.executeInTransaction(List.of(dataSource), context -> {
+            Optional<Wallet> optionalWallet = walletRepository.findById(changeWalletInputDto.getWalletId(), dataSource);
+            Wallet wallet = optionalWallet.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            walletRepository.updateStatus(changeWalletInputDto.getWalletId(), changeWalletInputDto.getToStatus(), dataSource);
+            walletStatusHistoryService.create(changeWalletInputDto, wallet.getStatus(), changeWalletInputDto.getChangedByUserUid());
+            Optional<Wallet> updatedOptionalWallet = walletRepository.findById(changeWalletInputDto.getWalletId(), dataSource);
+            Wallet updatedWallet = updatedOptionalWallet.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            WalletTypeOutputDto walletTypeOutputDto = walletTypeService.findById(wallet.getWalletTypeId());
+            return walletMapper.toWalletOutputDtoWithWalletType(updatedWallet, walletTypeOutputDto);
+        });
     }
 
     @Override
     public Boolean deleteById(UUID walletId, UUID profileId) {
         log.info("IN deleteById, walletId = {}, profileId = {}", walletId, profileId);
-        DataSource dataSource = shardService.getDataSourceByUuid(profileId);
-        walletRepository.findById(walletId, dataSource).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        return walletRepository.deleteById(walletId, dataSource);
+        DataSource dataSource = getDataSource(profileId);
+        return transactionManager.executeInTransaction(List.of(dataSource), context -> {
+            walletRepository.findById(walletId, dataSource).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            return walletRepository.deleteById(walletId, dataSource);
+        });
     }
+
+    private DataSource getDataSource(UUID profileId) {
+        TransactionContext context = TransactionContext.get();
+        DataSource dataSource = shardService.getDataSourceByUuid(profileId);
+
+        if (context.hasActiveTransaction()) {
+            Connection connection = context.getConnection(dataSource);
+            return new SingleConnectionDataSource(connection, false);
+        } else {
+            return dataSource;
+        }
+    }
+
 }

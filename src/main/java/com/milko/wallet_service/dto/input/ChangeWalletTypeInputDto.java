@@ -9,7 +9,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 public class ChangeWalletTypeInputDto {
-    private Integer walletTypeId;
+    private UUID walletTypeId;
     private UUID changedByUserUid;
     private String changedByProfileType;
     private String reason;
