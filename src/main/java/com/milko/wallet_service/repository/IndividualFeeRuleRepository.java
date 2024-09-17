@@ -8,6 +8,6 @@ import java.util.Optional;
 
 public interface IndividualFeeRuleRepository {
     IndividualFeeRule create(IndividualFeeRule feeRule, DataSource dataSource);
-    Optional<IndividualFeeRule> getByTransactionType(RequestType transactionType, DataSource dataSource);
+    IndividualFeeRule getByTransactionType(RequestType transactionType, DataSource dataSource);
     IndividualFeeRule getById(Long id, DataSource dataSource);
 }

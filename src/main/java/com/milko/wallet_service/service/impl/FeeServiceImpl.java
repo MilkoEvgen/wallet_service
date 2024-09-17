@@ -1,7 +1,5 @@
 package com.milko.wallet_service.service.impl;
 
-import com.milko.wallet_service.dto.input.PaymentRequestInputDto;
-import com.milko.wallet_service.exceptions.NotFoundException;
 import com.milko.wallet_service.model.IndividualFeeRule;
 import com.milko.wallet_service.model.PaymentRequest;
 import com.milko.wallet_service.repository.IndividualFeeRuleRepository;
@@ -29,8 +27,7 @@ public class FeeServiceImpl implements FeeService {
     @Override
     public BigDecimal getFee(PaymentRequest paymentRequest) {
         DataSource dataSource = getDataSource(paymentRequest.getProfileUid());
-        IndividualFeeRule feeRule = individualFeeRepository.getByTransactionType(paymentRequest.getType(), dataSource)
-                .orElseThrow(() -> new NotFoundException("Fee rule not found"));
+        IndividualFeeRule feeRule = individualFeeRepository.getByTransactionType(paymentRequest.getType(), dataSource);
         BigDecimal amount = paymentRequest.getAmount();
         BigDecimal percentage = feeRule.getPercentage();
         return amount.multiply(percentage).setScale(2, RoundingMode.HALF_UP);

@@ -1,10 +1,11 @@
 package com.milko.wallet_service.repository.impl;
 
+import com.milko.wallet_service.exceptions.NotFoundException;
 import com.milko.wallet_service.model.WithdrawalRequest;
 import com.milko.wallet_service.repository.WithdrawalRequestRepository;
-import com.milko.wallet_service.sharding.ShardService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
@@ -16,7 +17,6 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -31,25 +31,19 @@ public class WithdrawalRequestRepositoryImpl implements WithdrawalRequestReposit
         SimpleJdbcInsert simpleJdbcInsert = new SimpleJdbcInsert(dataSource)
                 .withTableName("withdrawal_requests");
         simpleJdbcInsert.execute(parameters);
-        return findById(request.getUuid(), dataSource).get();
+        return findById(request.getUuid(), dataSource);
     }
 
     @Override
-    public Optional<WithdrawalRequest> findById(UUID requestId, DataSource dataSource) {
+    public WithdrawalRequest findById(UUID requestId, DataSource dataSource) {
         log.info("IN findById, request id = {}", requestId);
         String sql = "SELECT * FROM withdrawal_requests WHERE uuid = ?";
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        WithdrawalRequest withdrawalRequest = jdbcTemplate.queryForObject(sql, new WithdrawalRequestRowMapper(), requestId);
-        return Optional.of(withdrawalRequest);
-    }
-
-    @Override
-    public Optional<WithdrawalRequest> findByPaymentRequestId(UUID paymentRequestId, DataSource dataSource) {
-        log.info("IN findById, request id = {}", paymentRequestId);
-        String sql = "SELECT * FROM withdrawal_requests WHERE payment_request_uid = ?";
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        WithdrawalRequest withdrawalRequest = jdbcTemplate.queryForObject(sql, new WithdrawalRequestRowMapper(), paymentRequestId);
-        return Optional.of(withdrawalRequest);
+        try {
+            return jdbcTemplate.queryForObject(sql, new WithdrawalRequestRowMapper(), requestId);
+        } catch (EmptyResultDataAccessException e) {
+            throw new NotFoundException("WithdrawalRequest with id " + requestId + " not found", LocalDateTime.now());
+        }
     }
 
     private Map<String, Object> getParametersFromWithdrawalRequest(WithdrawalRequest request) {

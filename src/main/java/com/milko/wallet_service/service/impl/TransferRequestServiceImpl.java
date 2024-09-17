@@ -1,7 +1,6 @@
 package com.milko.wallet_service.service.impl;
 
 import com.milko.wallet_service.dto.output.TransferRequestOutputDto;
-import com.milko.wallet_service.exceptions.NotFoundException;
 import com.milko.wallet_service.mapper.TransferRequestMapper;
 import com.milko.wallet_service.model.TransferRequest;
 import com.milko.wallet_service.repository.TransferRequestRepository;
@@ -36,8 +35,7 @@ public class TransferRequestServiceImpl implements TransferRequestService {
     public TransferRequestOutputDto findById(UUID uuid, UUID profileUid) {
         log.info("in findById, UUID = {}", uuid);
         DataSource dataSource = getDataSource(profileUid);
-        TransferRequest request = requestRepository.findById(uuid, dataSource)
-                .orElseThrow(() -> new NotFoundException("TransferRequest not found"));
+        TransferRequest request = requestRepository.findById(uuid, dataSource);
         return mapper.toTransferRequestOutputDto(request);
     }
 
@@ -45,8 +43,7 @@ public class TransferRequestServiceImpl implements TransferRequestService {
     public TransferRequestOutputDto findByPaymentRequestId(UUID paymentRequestId, UUID profileUid) {
         log.info("in findByPaymentRequestId, PaymentRequestId = {}", paymentRequestId);
         DataSource dataSource = getDataSource(profileUid);
-        TransferRequest request = requestRepository.findByPaymentRequestId(paymentRequestId, dataSource)
-                .orElseThrow(() -> new NotFoundException("TransferRequest not found"));
+        TransferRequest request = requestRepository.findByPaymentRequestId(paymentRequestId, dataSource);
         return mapper.toTransferRequestOutputDto(request);
     }
 

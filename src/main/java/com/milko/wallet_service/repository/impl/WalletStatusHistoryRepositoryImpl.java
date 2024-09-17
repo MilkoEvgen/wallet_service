@@ -3,7 +3,6 @@ package com.milko.wallet_service.repository.impl;
 import com.milko.wallet_service.dto.Status;
 import com.milko.wallet_service.model.WalletStatusHistory;
 import com.milko.wallet_service.repository.WalletStatusHistoryRepository;
-import com.milko.wallet_service.sharding.ShardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -32,13 +31,6 @@ public class WalletStatusHistoryRepositoryImpl implements WalletStatusHistoryRep
 
         int rowsAffected = simpleJdbcInsert.execute(parameters);
         return rowsAffected > 0;
-    }
-
-    @Override
-    public void rollbackCreate(UUID uuid, DataSource dataSource) {
-        String SQL = "DELETE FROM wallet_status_history WHERE uuid = ?";
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        jdbcTemplate.update(SQL, uuid);
     }
 
     @Override

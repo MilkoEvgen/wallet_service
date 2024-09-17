@@ -82,14 +82,14 @@ public class WithdrawalProcessor extends BasicProcessor{
 
     private void validateRequest(PaymentRequestOutputDto paymentRequest) {
         if (paymentRequest.getExpiredAt().isBefore(LocalDateTime.now())) {
-            throw new RequestExpiredException();
+            throw new RequestExpiredException("Payment request with id " + paymentRequest.getId() + "is expired. Expiration time " + paymentRequest.getExpiredAt(), LocalDateTime.now());
         }
     }
 
     private void validateFundsForWithdrawal(PaymentRequestOutputDto paymentRequest, WalletOutputDto wallet){
         BigDecimal requiredAmount = paymentRequest.getAmount().add(paymentRequest.getFee());
         if (wallet.getBalance().compareTo(requiredAmount) < 0) {
-            throw new LowBalanceException("Current balance " + wallet.getBalance() + " is less than required " + requiredAmount);
+            throw new LowBalanceException("Current balance " + wallet.getBalance() + " is less than required " + requiredAmount, LocalDateTime.now());
         }
     }
 }

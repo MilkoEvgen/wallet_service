@@ -3,9 +3,7 @@ package com.milko.wallet_service.dto.input;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.milko.wallet_service.dto.RequestType;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -13,6 +11,9 @@ import java.util.UUID;
 @Getter
 @Setter
 @ToString
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class PaymentRequestInputDto {
     private UUID profileUid;

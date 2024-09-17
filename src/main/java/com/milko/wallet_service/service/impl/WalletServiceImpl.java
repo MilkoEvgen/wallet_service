@@ -5,6 +5,7 @@ import com.milko.wallet_service.dto.input.WalletInputDto;
 import com.milko.wallet_service.dto.output.WalletOutputDto;
 import com.milko.wallet_service.dto.output.WalletTypeOutputDto;
 import com.milko.wallet_service.exceptions.LowBalanceException;
+import com.milko.wallet_service.exceptions.NotFoundException;
 import com.milko.wallet_service.mapper.WalletMapper;
 import com.milko.wallet_service.model.Wallet;
 import com.milko.wallet_service.repository.WalletRepository;
@@ -24,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.sql.Connection;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,16 +47,15 @@ public class WalletServiceImpl implements WalletService {
         log.info("IN create, wallet = {}", walletInputDto);
         DataSource dataSource = getDataSource(walletInputDto.getProfileUid());
         walletInputDto.setUuid(UUID.randomUUID());
-        Wallet wallet = walletRepository.create(walletMapper.toWallet(walletInputDto), dataSource);
         WalletTypeOutputDto walletTypeOutputDto = walletTypeService.findById(walletInputDto.getWalletTypeId());
+        Wallet wallet = walletRepository.create(walletMapper.toWallet(walletInputDto), dataSource);
         return walletMapper.toWalletOutputDtoWithWalletType(wallet, walletTypeOutputDto);
     }
 
     @Override
     public Boolean topUp(UUID walletUid, BigDecimal amount, UUID profileId) {
         DataSource dataSource = getDataSource(profileId);
-        Optional<Wallet> optionalWallet = walletRepository.findById(walletUid, dataSource);
-        Wallet wallet = optionalWallet.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        Wallet wallet = walletRepository.findById(walletUid, dataSource);
         BigDecimal newBalance = wallet.getBalance().add(amount);
         return walletRepository.updateBalance(walletUid, newBalance, dataSource);
     }
@@ -62,11 +63,10 @@ public class WalletServiceImpl implements WalletService {
     @Override
     public Boolean withdraw(UUID walletUid, BigDecimal amount, UUID profileId) {
         DataSource dataSource = getDataSource(profileId);
-        Optional<Wallet> optionalWallet = walletRepository.findById(walletUid, dataSource);
-        Wallet wallet = optionalWallet.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        Wallet wallet = walletRepository.findById(walletUid, dataSource);
         BigDecimal newBalance = wallet.getBalance().subtract(amount);
         if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
-            throw new LowBalanceException();
+            throw new LowBalanceException("Current balance " + wallet.getBalance() + " is less than required " + amount, LocalDateTime.now());
         }
         return walletRepository.updateBalance(walletUid, newBalance, dataSource);
     }
@@ -75,8 +75,7 @@ public class WalletServiceImpl implements WalletService {
     public WalletOutputDto findById(UUID walletId, UUID profileId) {
         log.info("IN findById, walletId = {}, profileId = {}", walletId, profileId);
         DataSource dataSource = getDataSource(profileId);
-        Optional<Wallet> optionalWallet = walletRepository.findById(walletId, dataSource);
-        Wallet wallet = optionalWallet.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        Wallet wallet = walletRepository.findById(walletId, dataSource);
         WalletTypeOutputDto walletTypeOutputDto = walletTypeService.findById(wallet.getWalletTypeId());
         return walletMapper.toWalletOutputDtoWithWalletType(wallet, walletTypeOutputDto);
     }
@@ -97,12 +96,10 @@ public class WalletServiceImpl implements WalletService {
         log.info("IN updateStatus, changeWalletInputDto = {}", changeWalletInputDto);
         DataSource dataSource = getDataSource(changeWalletInputDto.getChangedByUserUid());
         return transactionManager.executeInTransaction(List.of(dataSource), context -> {
-            Optional<Wallet> optionalWallet = walletRepository.findById(changeWalletInputDto.getWalletId(), dataSource);
-            Wallet wallet = optionalWallet.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            Wallet wallet = walletRepository.findById(changeWalletInputDto.getWalletId(), dataSource);
             walletRepository.updateStatus(changeWalletInputDto.getWalletId(), changeWalletInputDto.getToStatus(), dataSource);
             walletStatusHistoryService.create(changeWalletInputDto, wallet.getStatus(), changeWalletInputDto.getChangedByUserUid());
-            Optional<Wallet> updatedOptionalWallet = walletRepository.findById(changeWalletInputDto.getWalletId(), dataSource);
-            Wallet updatedWallet = updatedOptionalWallet.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            Wallet updatedWallet = walletRepository.findById(changeWalletInputDto.getWalletId(), dataSource);
             WalletTypeOutputDto walletTypeOutputDto = walletTypeService.findById(wallet.getWalletTypeId());
             return walletMapper.toWalletOutputDtoWithWalletType(updatedWallet, walletTypeOutputDto);
         });
@@ -113,7 +110,7 @@ public class WalletServiceImpl implements WalletService {
         log.info("IN deleteById, walletId = {}, profileId = {}", walletId, profileId);
         DataSource dataSource = getDataSource(profileId);
         return transactionManager.executeInTransaction(List.of(dataSource), context -> {
-            walletRepository.findById(walletId, dataSource).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            walletRepository.findById(walletId, dataSource);
             return walletRepository.deleteById(walletId, dataSource);
         });
     }

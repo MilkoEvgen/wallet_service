@@ -1,11 +1,12 @@
 package com.milko.wallet_service.repository.impl;
 
 import com.milko.wallet_service.dto.Status;
+import com.milko.wallet_service.exceptions.NotFoundException;
 import com.milko.wallet_service.model.Wallet;
 import com.milko.wallet_service.repository.WalletRepository;
-import com.milko.wallet_service.sharding.ShardService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -17,7 +18,10 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Repository
@@ -31,16 +35,20 @@ public class WalletRepositoryImpl implements WalletRepository {
         SimpleJdbcInsert simpleJdbcInsert = new SimpleJdbcInsert(dataSource)
                 .withTableName("wallets");
         simpleJdbcInsert.execute(parameters);
-        return findById(wallet.getUuid(), dataSource).get();
+        return findById(wallet.getUuid(), dataSource);
     }
 
     @Override
-    public Optional<Wallet> findById(UUID walletId, DataSource dataSource) {
+    public Wallet findById(UUID walletId, DataSource dataSource) {
         log.info("IN WalletRepository findById, walletId = {}", walletId);
         String sql = "SELECT * FROM wallets WHERE uuid = ?";
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        Wallet wallet = jdbcTemplate.queryForObject(sql, new WalletRepositoryImpl.WalletRowMapper(), walletId);
-        return Optional.of(wallet);
+        try {
+            return jdbcTemplate.queryForObject(sql, new WalletRepositoryImpl.WalletRowMapper(), walletId);
+        } catch (EmptyResultDataAccessException e) {
+            log.info("Кошелек не найден, выбрасываем исключение");
+            throw new NotFoundException("Wallet with id " + walletId + " not found", LocalDateTime.now());
+        }
     }
 
     @Override
@@ -52,7 +60,7 @@ public class WalletRepositoryImpl implements WalletRepository {
     }
 
     @Override
-    public Optional<Wallet> update(Wallet wallet, DataSource dataSource) {
+    public Wallet update(Wallet wallet, DataSource dataSource) {
         log.info("IN WalletRepository update, wallet = {}", wallet);
         StringBuilder sql = new StringBuilder("UPDATE wallets SET ");
         Map<String, Object> parameters = new HashMap<>();

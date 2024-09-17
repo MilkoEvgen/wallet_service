@@ -1,10 +1,9 @@
 package com.milko.wallet_service.service.impl;
 
-import com.milko.wallet_service.dto.input.ChangeWalletTypeInputDto;
 import com.milko.wallet_service.dto.Status;
+import com.milko.wallet_service.dto.input.ChangeWalletTypeInputDto;
 import com.milko.wallet_service.dto.input.WalletTypeInputDto;
 import com.milko.wallet_service.dto.output.WalletTypeOutputDto;
-import com.milko.wallet_service.exceptions.ShardServiceException;
 import com.milko.wallet_service.mapper.WalletTypeMapper;
 import com.milko.wallet_service.model.WalletType;
 import com.milko.wallet_service.repository.WalletTypeRepository;
@@ -20,7 +19,9 @@ import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -68,15 +69,19 @@ public class WalletTypeServiceImpl implements WalletTypeService {
         log.info("IN WalletTypeServiceImpl update(), dto = {}", dto);
         List<DataSource> dataSources = shardService.getAllDataSources();
         WalletType walletType = walletTypeRepository.findById(dto.getWalletTypeId(), shardService.getRandomDataSource());
-
+        Status newStatus = dto.getToStatus();
+        LocalDateTime modifyingTime = LocalDateTime.now();
         UUID generatedId = UUID.randomUUID();
 
         return transactionManager.executeInTransaction(dataSources, context -> {
             for (DataSource dataSource : dataSources) {
-                walletTypeRepository.updateStatus(dto.getToStatus(), dto.getWalletTypeId(), dto.getChangedByUserUid(), getTransactionalDataSource(dataSource));
+                walletTypeRepository.updateStatus(dto, modifyingTime, getTransactionalDataSource(dataSource));
                 walletTypeStatusHistoryService.create(dto, generatedId, walletType.getStatus(), getTransactionalDataSource(dataSource));
             }
-            return walletTypeMapper.toWalletTypeOutputDto(walletTypeRepository.findById(dto.getWalletTypeId(), shardService.getRandomDataSource()));
+            walletType.setStatus(newStatus);
+            walletType.setModifiedAt(modifyingTime);
+            walletType.setModifier(dto.getChangedByUserUid().toString());
+            return walletTypeMapper.toWalletTypeOutputDto(walletType);
         });
     }
 

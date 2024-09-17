@@ -41,8 +41,7 @@ public class WithdrawalRequestServiceImpl implements WithdrawalRequestService {
     public WithdrawalRequestOutputDto findById(UUID requestId, UUID profileUid) {
         log.info("IN findById, requestId = {}", requestId);
         DataSource dataSource = getDataSource(profileUid);
-        WithdrawalRequest request = repository.findById(requestId, dataSource)
-                .orElseThrow(() -> new NotFoundException("WithdrawalRequest not found"));
+        WithdrawalRequest request = repository.findById(requestId, dataSource);
         return mapper.toWithdrawalRequestOutputDto(request);
     }
 

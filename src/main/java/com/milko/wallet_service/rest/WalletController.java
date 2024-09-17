@@ -25,7 +25,7 @@ public class WalletController {
         return walletService.create(walletInputDto);
     }
 
-    @GetMapping
+    @PostMapping("/get")
     public WalletOutputDto findById(@RequestBody WalletRequestInputDto walletRequestInputDto){
         return walletService.findById(walletRequestInputDto.getWalletId(), walletRequestInputDto.getProfileId());
     }
@@ -40,7 +40,7 @@ public class WalletController {
         return walletService.updateStatus(changeWalletInputDto);
     }
 
-    @DeleteMapping
+    @PostMapping("/delete")
     public Boolean delete(@RequestBody WalletRequestInputDto walletRequestInputDto){
         return walletService.deleteById(walletRequestInputDto.getWalletId(), walletRequestInputDto.getProfileId());
     }

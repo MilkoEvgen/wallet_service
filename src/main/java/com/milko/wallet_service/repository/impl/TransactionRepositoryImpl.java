@@ -1,11 +1,13 @@
 package com.milko.wallet_service.repository.impl;
 
 import com.milko.wallet_service.dto.Status;
+import com.milko.wallet_service.exceptions.NotFoundException;
 import com.milko.wallet_service.model.Transaction;
 import com.milko.wallet_service.model.TransactionStatus;
 import com.milko.wallet_service.model.Wallet;
 import com.milko.wallet_service.repository.TransactionRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
@@ -28,10 +30,15 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     public Transaction create(Transaction transaction, DataSource dataSource) {
         log.info("IN create, transaction = {}", transaction);
         Map<String, Object> parameters = getParametersFromTransaction(transaction);
-        SimpleJdbcInsert simpleJdbcInsert = new SimpleJdbcInsert(dataSource)
-                .withTableName("transactions");
-        simpleJdbcInsert.execute(parameters);
-        return findById(transaction.getUuid(), dataSource).get();
+        try {
+            SimpleJdbcInsert simpleJdbcInsert = new SimpleJdbcInsert(dataSource)
+                    .withTableName("transactions");
+            simpleJdbcInsert.execute(parameters);
+        } catch (Exception e){
+            log.error(e.getMessage());
+        }
+
+        return findById(transaction.getUuid(), dataSource);
     }
 
     @Override
@@ -40,16 +47,19 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         String sql = "UPDATE transactions SET status = ?, modified_at = ? WHERE uuid = ?";
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
         jdbcTemplate.update(sql, status.toString(), LocalDateTime.now(), transactionId);
-        return findById(transactionId, dataSource).get();
+        return findById(transactionId, dataSource);
     }
 
     @Override
-    public Optional<Transaction> findById(UUID transactionId, DataSource dataSource) {
+    public Transaction findById(UUID transactionId, DataSource dataSource) {
         log.info("IN findById, transactionId = {}", transactionId);
         String sql = "SELECT * FROM transactions WHERE uuid = ?";
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        Transaction transaction = jdbcTemplate.queryForObject(sql, new TransactionRowMapper(), transactionId);
-        return Optional.of(transaction);
+        try {
+            return jdbcTemplate.queryForObject(sql, new TransactionRowMapper(), transactionId);
+        } catch (EmptyResultDataAccessException e) {
+            throw new NotFoundException("Transaction with id " + transactionId + " not found", LocalDateTime.now());
+        }
     }
 
     private Map<String, Object> getParametersFromTransaction(Transaction transaction) {

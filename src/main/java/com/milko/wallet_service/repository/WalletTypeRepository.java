@@ -1,6 +1,7 @@
 package com.milko.wallet_service.repository;
 
 import com.milko.wallet_service.dto.Status;
+import com.milko.wallet_service.dto.input.ChangeWalletTypeInputDto;
 import com.milko.wallet_service.model.WalletType;
 
 import javax.sql.DataSource;
@@ -12,6 +13,6 @@ public interface WalletTypeRepository {
     Boolean create(WalletType walletType, DataSource dataSource);
     WalletType findById(UUID uuid, DataSource dataSource);
     List<WalletType> findAll(DataSource dataSource);
-    Boolean updateStatus(Status status, UUID id, UUID changedByUserId, DataSource dataSource);
+    Boolean updateStatus(ChangeWalletTypeInputDto dto, LocalDateTime modifyingTime, DataSource dataSource);
     Boolean deleteById(UUID uuid, DataSource dataSource);
 }

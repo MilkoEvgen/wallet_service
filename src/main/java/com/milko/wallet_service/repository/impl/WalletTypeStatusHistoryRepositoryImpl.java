@@ -34,24 +34,10 @@ public class WalletTypeStatusHistoryRepositoryImpl implements WalletTypeStatusHi
     }
 
     @Override
-    public void rollbackCreate(Long id, DataSource dataSource) {
-        String SQL = "DELETE FROM wallet_types_status_history WHERE id = ?";
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        jdbcTemplate.update(SQL, id);
-    }
-
-    @Override
     public List<WalletTypeStatusHistory> findAllByWalletTypeId(UUID walletTypeId, DataSource dataSource) {
         String SQL = "SELECT * FROM wallet_types_status_history WHERE wallet_type_id = ?";
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
         return jdbcTemplate.query(SQL, new WalletTypeStatusHistoryRowMapper(), walletTypeId);
-    }
-
-    @Override
-    public Long getMaxId(DataSource dataSource) {
-        String SQL = "SELECT max(id) FROM wallet_types_status_history";
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        return jdbcTemplate.queryForObject(SQL, Long.class);
     }
 
     private Map<String, Object> getParametersFromWalletTypeStatusHistory(WalletTypeStatusHistory walletTypeStatusHistory){

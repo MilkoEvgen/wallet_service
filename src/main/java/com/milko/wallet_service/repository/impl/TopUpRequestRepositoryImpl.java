@@ -1,10 +1,12 @@
 package com.milko.wallet_service.repository.impl;
 
+import com.milko.wallet_service.exceptions.NotFoundException;
 import com.milko.wallet_service.model.TopUpRequest;
 import com.milko.wallet_service.repository.TopUpRequestRepository;
 import com.milko.wallet_service.sharding.ShardService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
@@ -31,25 +33,20 @@ public class TopUpRequestRepositoryImpl implements TopUpRequestRepository {
         SimpleJdbcInsert simpleJdbcInsert = new SimpleJdbcInsert(dataSource)
                 .withTableName("top_up_requests");
         simpleJdbcInsert.execute(parameters);
-        return findById(request.getUuid(), dataSource).get();
+        return findById(request.getUuid(), dataSource);
     }
 
     @Override
-    public Optional<TopUpRequest> findById(UUID id, DataSource dataSource) {
+    public TopUpRequest findById(UUID id, DataSource dataSource) {
         log.info("IN findById, request id = {}", id);
         String sql = "SELECT * FROM top_up_requests WHERE uuid = ?";
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        TopUpRequest topUpRequest = jdbcTemplate.queryForObject(sql, new TopUpRequestRepositoryImpl.TopUpRequestRowMapper(), id);
-        return Optional.of(topUpRequest);
-    }
+        try {
+            return jdbcTemplate.queryForObject(sql, new TopUpRequestRepositoryImpl.TopUpRequestRowMapper(), id);
+        } catch (EmptyResultDataAccessException e) {
+            throw new NotFoundException("TopUpRequest with id " + id + " not found", LocalDateTime.now());
+        }
 
-    @Override
-    public Optional<TopUpRequest> findByPaymentRequestId(UUID paymentRequestId, DataSource dataSource) {
-        log.info("IN findById, request id = {}", paymentRequestId);
-        String sql = "SELECT * FROM top_up_requests WHERE payment_request_uid = ?";
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        TopUpRequest topUpRequest = jdbcTemplate.queryForObject(sql, new TopUpRequestRepositoryImpl.TopUpRequestRowMapper(), paymentRequestId);
-        return Optional.of(topUpRequest);
     }
 
     private Map<String, Object> getParametersFromTopUpRequest(TopUpRequest request) {

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -42,7 +43,7 @@ public class TransactionManager {
             commitTransaction();
         } catch (Exception e) {
             rollbackTransaction();
-            throw new TransactionFailedException("Transaction failed", e);
+            throw new TransactionFailedException("Transaction failed", e.getCause(), LocalDateTime.now());
         }
 
         return result;

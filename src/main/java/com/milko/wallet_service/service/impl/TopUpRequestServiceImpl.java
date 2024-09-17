@@ -42,8 +42,7 @@ public class TopUpRequestServiceImpl implements TopUpRequestService {
     public TopUpRequestOutputDto findById(UUID requestId, UUID profileUid) {
         log.info("IN findById, requestId = {}", requestId);
         DataSource dataSource = getDataSource(profileUid);
-        TopUpRequest request = repository.findById(requestId, dataSource)
-                .orElseThrow(() -> new NotFoundException("TopUpRequest not found"));
+        TopUpRequest request = repository.findById(requestId, dataSource);
         return mapper.toTopUpRequestOutputDto(request);
     }
 

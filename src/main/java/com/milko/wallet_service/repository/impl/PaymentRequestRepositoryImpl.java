@@ -2,10 +2,12 @@ package com.milko.wallet_service.repository.impl;
 
 import com.milko.wallet_service.dto.RequestType;
 import com.milko.wallet_service.dto.Status;
+import com.milko.wallet_service.exceptions.NotFoundException;
 import com.milko.wallet_service.model.PaymentRequest;
 import com.milko.wallet_service.repository.PaymentRequestRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
@@ -29,16 +31,19 @@ public class PaymentRequestRepositoryImpl implements PaymentRequestRepository {
         SimpleJdbcInsert simpleJdbcInsert = new SimpleJdbcInsert(dataSource)
                 .withTableName("payment_requests");
         simpleJdbcInsert.execute(parameters);
-        return findById(request.getId(), dataSource).get();
+        return findById(request.getId(), dataSource);
     }
 
     @Override
-    public Optional<PaymentRequest> findById(UUID requestId, DataSource dataSource) {
+    public PaymentRequest findById(UUID requestId, DataSource dataSource) {
         log.info("IN findById, requestId = {}", requestId);
         String sql = "SELECT * FROM payment_requests WHERE uuid = ?";
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        PaymentRequest request = jdbcTemplate.queryForObject(sql, new PaymentRequestRowMapper(), requestId);
-        return Optional.of(request);
+        try {
+            return jdbcTemplate.queryForObject(sql, new PaymentRequestRowMapper(), requestId);
+        } catch (EmptyResultDataAccessException e) {
+            throw new NotFoundException("PaymentRequest with id " + requestId + " not found", LocalDateTime.now());
+        }
     }
 
     @Override

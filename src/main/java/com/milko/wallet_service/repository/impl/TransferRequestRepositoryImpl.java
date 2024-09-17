@@ -1,10 +1,11 @@
 package com.milko.wallet_service.repository.impl;
 
+import com.milko.wallet_service.exceptions.NotFoundException;
 import com.milko.wallet_service.model.TransferRequest;
 import com.milko.wallet_service.repository.TransferRequestRepository;
-import com.milko.wallet_service.sharding.ShardService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
@@ -16,7 +17,6 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -31,25 +31,31 @@ public class TransferRequestRepositoryImpl implements TransferRequestRepository 
         SimpleJdbcInsert simpleJdbcInsert = new SimpleJdbcInsert(dataSource)
                 .withTableName("transfer_requests");
         simpleJdbcInsert.execute(parameters);
-        return findById(request.getUuid(), dataSource).get();
+        return findById(request.getUuid(), dataSource);
     }
 
     @Override
-    public Optional<TransferRequest> findById(UUID uuid, DataSource dataSource) {
+    public TransferRequest findById(UUID uuid, DataSource dataSource) {
         log.info("IN findById, request id = {}", uuid);
         String sql = "SELECT * FROM transfer_requests WHERE uuid = ?";
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        TransferRequest transferRequest = jdbcTemplate.queryForObject(sql, new TransferRequestRowMapper(), uuid);
-        return Optional.of(transferRequest);
+        try {
+            return jdbcTemplate.queryForObject(sql, new TransferRequestRowMapper(), uuid);
+        } catch (EmptyResultDataAccessException e) {
+            throw new NotFoundException("TransferRequest with id " + uuid + " not found", LocalDateTime.now());
+        }
     }
 
     @Override
-    public Optional<TransferRequest> findByPaymentRequestId(UUID paymentRequestId, DataSource dataSource) {
+    public TransferRequest findByPaymentRequestId(UUID paymentRequestId, DataSource dataSource) {
         log.info("IN findById, paymentRequestId = {}", paymentRequestId);
         String sql = "SELECT * FROM transfer_requests WHERE payment_request_uid_from = ?";
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        TransferRequest transferRequest = jdbcTemplate.queryForObject(sql, new TransferRequestRowMapper(), paymentRequestId);
-        return Optional.of(transferRequest);
+        try {
+            return jdbcTemplate.queryForObject(sql, new TransferRequestRowMapper(), paymentRequestId);
+        } catch (EmptyResultDataAccessException e) {
+            throw new NotFoundException("TransferRequest with payment request uid " + paymentRequestId + " not found", LocalDateTime.now());
+        }
     }
 
     private Map<String, Object> getParametersFromTransferRequest(TransferRequest request) {

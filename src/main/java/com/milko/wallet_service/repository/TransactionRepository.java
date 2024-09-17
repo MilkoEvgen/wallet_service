@@ -11,5 +11,5 @@ import java.util.UUID;
 public interface TransactionRepository {
     Transaction create(Transaction transaction, DataSource dataSource);
     Transaction updateStatus(UUID transactionId, TransactionStatus status, DataSource dataSource);
-    Optional<Transaction> findById(UUID transactionId, DataSource dataSource);
+    Transaction findById(UUID transactionId, DataSource dataSource);
 }

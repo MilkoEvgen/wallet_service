@@ -10,6 +10,5 @@ import java.util.UUID;
 public interface WalletStatusHistoryRepository {
 
     Boolean create(WalletStatusHistory walletStatusHistory, DataSource dataSource);
-    void rollbackCreate(UUID uuid, DataSource dataSource);
     List<WalletStatusHistory> findAllByWalletId(UUID walletUid, DataSource dataSource);
 }

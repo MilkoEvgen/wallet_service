@@ -1,9 +1,12 @@
 package com.milko.wallet_service.repository.impl;
 
 import com.milko.wallet_service.dto.Status;
+import com.milko.wallet_service.dto.input.ChangeWalletTypeInputDto;
+import com.milko.wallet_service.exceptions.NotFoundException;
 import com.milko.wallet_service.model.WalletType;
 import com.milko.wallet_service.repository.WalletTypeRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
@@ -37,7 +40,12 @@ public class WalletTypeRepositoryImpl implements WalletTypeRepository {
         log.info("IN WalletTypeRepository findById, uuid = {}", uuid);
         String sql = "SELECT * FROM wallet_types WHERE uuid = ?";
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        return jdbcTemplate.queryForObject(sql, new WalletTypeRowMapper(), uuid);
+        try {
+            WalletType walletType = jdbcTemplate.queryForObject(sql, new WalletTypeRowMapper(), uuid);
+            return walletType;
+        } catch (EmptyResultDataAccessException e) {
+            throw new NotFoundException("WalletType with id " + uuid + " not found", LocalDateTime.now());
+        }
     }
 
     @Override
@@ -49,11 +57,11 @@ public class WalletTypeRepositoryImpl implements WalletTypeRepository {
     }
 
     @Override
-    public Boolean updateStatus(Status status, UUID id, UUID changedByUserId, DataSource dataSource) {
-        log.info("IN WalletTypeRepository update, status = {}, id = {}", status, id);
+    public Boolean updateStatus(ChangeWalletTypeInputDto dto, LocalDateTime modifyingTime, DataSource dataSource) {
+        log.info("IN WalletTypeRepository update, status = {}, id = {}", dto.getToStatus().name(), dto.getWalletTypeId());
         String sql = "UPDATE wallet_types SET status = ?, modified_at = ?, modifier = ? WHERE uuid = ?";
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        int rowsAffected = jdbcTemplate.update(sql, status.name(), LocalDateTime.now(), changedByUserId.toString(), id);
+        int rowsAffected = jdbcTemplate.update(sql, dto.getToStatus().name(), modifyingTime, dto.getChangedByUserUid().toString(), dto.getWalletTypeId());
 
         return rowsAffected > 0;
     }

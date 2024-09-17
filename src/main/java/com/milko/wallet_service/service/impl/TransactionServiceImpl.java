@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Slf4j
@@ -37,8 +38,7 @@ public class TransactionServiceImpl implements TransactionService {
     public TransactionOutputDto findById(UUID transactionId, UUID profileUid) {
         log.info("IN findById, transactionId = {}", transactionId);
         DataSource dataSource = getDataSource(profileUid);
-        Transaction transaction = repository.findById(transactionId, dataSource)
-                .orElseThrow(() -> new NotFoundException("Transaction not found"));
+        Transaction transaction = repository.findById(transactionId, dataSource);
         return mapper.toTransactionOutputDto(transaction);
     }
 
@@ -51,6 +51,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     private DataSource getDataSource(UUID profileId) {
+
         TransactionContext context = TransactionContext.get();
         DataSource dataSource = shardService.getDataSourceByUuid(profileId);
 

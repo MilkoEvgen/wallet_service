@@ -1,10 +1,18 @@
 package com.milko.wallet_service.exceptions;
 
-public class LowBalanceException extends RuntimeException{
-    public LowBalanceException() {
-    }
+import lombok.Getter;
+import lombok.Setter;
 
-    public LowBalanceException(String message) {
-        super(message);
+import java.time.LocalDateTime;
+
+@Getter
+@Setter
+public class LowBalanceException extends RuntimeException{
+    private String message;
+    private LocalDateTime time;
+
+    public LowBalanceException(String message, LocalDateTime time) {
+        this.message = message;
+        this.time = time;
     }
 }

@@ -2,9 +2,11 @@ package com.milko.wallet_service.repository.impl;
 
 import com.milko.wallet_service.dto.RequestType;
 import com.milko.wallet_service.dto.Status;
+import com.milko.wallet_service.exceptions.NotFoundException;
 import com.milko.wallet_service.model.IndividualFeeRule;
 import com.milko.wallet_service.repository.IndividualFeeRuleRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Repository;
 import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -32,12 +35,15 @@ public class IndividualFeeRuleRepositoryImpl implements IndividualFeeRuleReposit
     }
 
     @Override
-    public Optional<IndividualFeeRule> getByTransactionType(RequestType transactionType, DataSource dataSource) {
+    public IndividualFeeRule getByTransactionType(RequestType transactionType, DataSource dataSource) {
         log.info("in getByTransactionType, transactionType = {}", transactionType);
         String SQL = "SELECT * FROM individual_fee_rules WHERE transaction_type = ? LIMIT 1";
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        IndividualFeeRule feeRule = jdbcTemplate.queryForObject(SQL, new IndividualFeeRuleRowMapper(), transactionType.toString());
-        return Optional.of(feeRule);
+        try {
+            return jdbcTemplate.queryForObject(SQL, new IndividualFeeRuleRowMapper(), transactionType.toString());
+        } catch (EmptyResultDataAccessException e) {
+            throw new NotFoundException("FeeRule for transaction type " + transactionType + " not found", LocalDateTime.now());
+        }
     }
 
     @Override

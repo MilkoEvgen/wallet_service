@@ -6,12 +6,7 @@ import com.milko.wallet_service.dto.output.PaymentRequestOutputDto;
 import com.milko.wallet_service.dto.output.TransactionOutputDto;
 import com.milko.wallet_service.dto.output.WalletOutputDto;
 import com.milko.wallet_service.exceptions.RequestExpiredException;
-import com.milko.wallet_service.mapper.TransactionMapper;
-import com.milko.wallet_service.model.TopUpRequest;
 import com.milko.wallet_service.model.Transaction;
-import com.milko.wallet_service.model.TransactionStatus;
-import com.milko.wallet_service.repository.TopUpRequestRepository;
-import com.milko.wallet_service.repository.TransactionRepository;
 import com.milko.wallet_service.service.PaymentRequestService;
 import com.milko.wallet_service.service.TransactionService;
 import com.milko.wallet_service.service.WalletService;
@@ -26,7 +21,6 @@ import javax.sql.DataSource;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -83,7 +77,7 @@ public class TopUpProcessor extends BasicProcessor {
 
     private void validateRequest(PaymentRequestOutputDto paymentRequest) {
         if (paymentRequest.getExpiredAt().isBefore(LocalDateTime.now())) {
-            throw new RequestExpiredException();
+            throw new RequestExpiredException("Payment request with id " + paymentRequest.getId() + "is expired. Expiration time " + paymentRequest.getExpiredAt(), LocalDateTime.now());
         }
     }
 }

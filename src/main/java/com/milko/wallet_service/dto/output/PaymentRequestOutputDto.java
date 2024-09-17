@@ -4,8 +4,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.milko.wallet_service.dto.RequestType;
 import com.milko.wallet_service.dto.Status;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -13,6 +12,10 @@ import java.util.UUID;
 
 @Getter
 @Setter
+@Builder
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class PaymentRequestOutputDto {
     private UUID id;

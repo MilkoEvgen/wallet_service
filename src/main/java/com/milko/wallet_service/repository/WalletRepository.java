@@ -11,11 +11,10 @@ import java.util.UUID;
 
 public interface WalletRepository {
     Wallet create(Wallet wallet, DataSource dataSource);
-    Optional<Wallet> findById(UUID walletId, DataSource dataSource);
+    Wallet findById(UUID walletId, DataSource dataSource);
     List<Wallet> findAllByUserId(UUID uuid, DataSource dataSource);
-    Optional<Wallet> update(Wallet wallet, DataSource dataSource);
+    Wallet update(Wallet wallet, DataSource dataSource);
     Boolean updateBalance(UUID walletId, BigDecimal newBalance, DataSource dataSource);
     Boolean updateStatus(UUID walletId, Status status, DataSource dataSource);
     Boolean deleteById(UUID walletId, DataSource dataSource);
-
 }
